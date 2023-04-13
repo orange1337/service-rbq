@@ -1,0 +1,23 @@
+{
+  "name": "service-rbq",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "pm2-runtime start ecosystem.config.js",
+    "build": "tsc",
+    "build:watch": "tsc -w"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^5.0.4"
+  },
+  "dependencies": {
+    "@types/amqplib": "^0.10.1",
+    "amqplib": "^0.10.3",
+    "dotenv": "^16.0.3",
+    "pm2": "^5.3.0"
+  }
+}

@@ -1,0 +1,14 @@
+version: "3.3"
+
+services:
+    rabbitmq:
+      image: rabbitmq:3.10-management
+      container_name: "rabbitmq"
+      ports:
+        - 5672:5672
+        - 15672:15672
+      environment:
+        - RABBITMQ_DEFAULT_USER=user
+        - RABBITMQ_DEFAULT_PASS=yourpassword
+      volumes:
+        - ./data:/var/lib/rabbitmq
