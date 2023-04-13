@@ -11,7 +11,7 @@ module.exports = {
         {
             name   : "service",
             script : "./build/service.js",
-            instances: 4,
+            instances: 2,
             exec_mode: 'cluster',
         }
     ]
