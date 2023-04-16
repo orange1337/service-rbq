@@ -1,15 +1,15 @@
 /**
  * Service
  */
-import amqplib from "amqplib";
-
 import * as dotenv from 'dotenv';
 dotenv.config();
+
+import { RbmqService } from './rbmq.service';
 
 const RBQ_USER = process.env?.RBQ_USER || 'user';
 const RBQ_PASS = process.env?.RBQ_PASS || 'yourpassword';
 
-import { TaskData, TaskResult } from './interfaces';
+import { Queues, TaskData, TaskResult } from './interfaces';
 import { toBufferJson, fromBufferJson, Logger, getRandom } from './utils';
 
 const logger = new Logger('SERVICE');
@@ -23,19 +23,13 @@ const logger = new Logger('SERVICE');
 })();
 
 async function Init() {
-    
-    const conn = await amqplib.connect(`amqp://${RBQ_USER}:${RBQ_PASS}@localhost:5672`);
-  
-    const tasksQueue = 'tasks';
-    const ch1 = await conn.createChannel();
-    await ch1.assertQueue(tasksQueue, { durable: true });
-    ch1.prefetch(1);
+    const channel = await new RbmqService(
+        `amqp://${RBQ_USER}:${RBQ_PASS}@localhost:5672`
+    )
+    .connect(Object.values(Queues));
+    channel.prefetch(1)
 
-    const resultsQueue = 'results';
-    const ch2 = await conn.createChannel();
-    await ch2.assertQueue(resultsQueue, { durable: true });
-
-    ch1.consume(tasksQueue, (msg) => {
+    channel.consume(Queues.tasks, (msg) => {
         if (msg === null) {
             return logger.log('Null message');
         }
@@ -50,11 +44,11 @@ async function Init() {
                 result: getRandom(0, 1),
                 error: null,
             };
-            ch2.sendToQueue(resultsQueue, toBufferJson(resultData), {
+            channel.sendToQueue(Queues.results, toBufferJson(resultData), {
                 persistent: true
             });
 
-            ch1.ack(msg);
+            channel.ack(msg);
         }, getRandom(1000, 3000));
     }, {
         noAck: false

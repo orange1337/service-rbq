@@ -1,15 +1,15 @@
 /**
  * Client
  */
-import amqplib from 'amqplib';
-
 import * as dotenv from 'dotenv';
 dotenv.config();
+
+import { RbmqService } from './rbmq.service';
 
 const RBQ_USER = process.env?.RBQ_USER || 'user';
 const RBQ_PASS = process.env?.RBQ_PASS || 'yourpassword';
 
-import { Commands, TaskData, TaskResult } from './interfaces';
+import { Queues, Commands, TaskData, TaskResult } from './interfaces';
 import { toBufferJson, fromBufferJson, Logger } from './utils';
 
 const logger = new Logger('CLIENT');
@@ -23,15 +23,10 @@ const logger = new Logger('CLIENT');
 })();
 
 async function Init(): Promise<void> {
-    const conn = await amqplib.connect(`amqp://${RBQ_USER}:${RBQ_PASS}@localhost:5672`);
-  
-    const tasksQueue = 'tasks';
-    const ch1 = await conn.createChannel();
-    await ch1.assertQueue(tasksQueue, { durable: true });
-
-    const resultsQueue = 'results';
-    const ch2 = await conn.createChannel();
-    await ch2.assertQueue(resultsQueue, { durable: true });
+    const channel = await new RbmqService(
+        `amqp://${RBQ_USER}:${RBQ_PASS}@localhost:5672`
+    )
+    .connect(Object.values(Queues));
 
     const taskData: TaskData = {
         taskId: '1234',
@@ -39,11 +34,11 @@ async function Init(): Promise<void> {
         payload: 'some memo'
     };
 
-    ch1.sendToQueue(tasksQueue, toBufferJson(taskData), {
+    channel.sendToQueue(Queues.tasks, toBufferJson(taskData), {
         persistent: true
     });
 
-    ch2.consume(resultsQueue, (msg) => {
+    channel.consume(Queues.results, (msg) => {
         if (msg === null) {
             return logger.log('Null message');
         }
@@ -112,11 +107,11 @@ async function Init(): Promise<void> {
         }
 
         if (!finished) {
-            ch1.sendToQueue(tasksQueue, toBufferJson(taskData), {
+            channel.sendToQueue(Queues.tasks, toBufferJson(taskData), {
                 persistent: true
             });
         }
-        ch2.ack(msg);
+        channel.ack(msg);
     }, {
         noAck: false,
     });

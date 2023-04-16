@@ -1,6 +1,11 @@
 /**
  * Interfaces
  */
+export enum Queues {
+    tasks = 'tasks',
+    results = 'results',
+}
+
 export enum Commands {
     checkApproved = 'checkApproved',
     approve = 'approve',
