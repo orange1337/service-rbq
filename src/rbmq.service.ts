@@ -15,10 +15,19 @@ export class RbmqService {
         this.connection = await amqplib.connect(this.connectionUrl);
         this.channel = await this.connection.createChannel();
 
-        for (let i = 0; i < queues.length; i++) {
-            await this.channel.assertQueue(queues[i], { durable: true });
-        }
+        await this.assertQueues(queues);
 
         return this.channel;
+    }
+
+    async assertQueues(queues: string[]) {
+        for (let i = 0; i < queues.length; i++) {
+            await this.channel?.assertQueue(queues[i], { durable: true });
+        }
+    }
+
+    async disconnect() {
+        await this.channel?.close();
+        await this.connection?.close();
     }
 }

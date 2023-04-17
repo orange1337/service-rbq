@@ -6,6 +6,11 @@ export enum Queues {
     results = 'results',
 }
 
+export interface iQueues {
+    tasks: string;
+    results: string;
+}
+
 export enum Commands {
     checkApproved = 'checkApproved',
     approve = 'approve',

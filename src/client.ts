@@ -1,6 +1,8 @@
 /**
  * Client
  */
+import amqplib from 'amqplib';
+
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -9,25 +11,26 @@ import { RbmqService } from './rbmq.service';
 const RBQ_USER = process.env?.RBQ_USER || 'user';
 const RBQ_PASS = process.env?.RBQ_PASS || 'yourpassword';
 
-import { Queues, Commands, TaskData, TaskResult } from './interfaces';
+import { iQueues, Queues, Commands, TaskData, TaskResult } from './interfaces';
 import { toBufferJson, fromBufferJson, Logger } from './utils';
 
 const logger = new Logger('CLIENT');
 
 (async () => {
     try {
-        await Init();
+        await InitClient();
     } catch (err) {
         logger.log(err);
     }
 })();
 
-async function Init(): Promise<void> {
+async function InitClient(): Promise<void> {
     const channel = await new RbmqService(
         `amqp://${RBQ_USER}:${RBQ_PASS}@localhost:5672`
     )
     .connect(Object.values(Queues));
 
+    // just as test example task for starting of application
     const taskData: TaskData = {
         taskId: '1234',
         command: Commands.checkApproved,
@@ -38,7 +41,14 @@ async function Init(): Promise<void> {
         persistent: true
     });
 
-    channel.consume(Queues.results, (msg) => {
+    processClientResults(channel, Queues);
+}
+
+export function processClientResults(
+    channel: amqplib.Channel,
+    queues: iQueues,
+): void {
+    channel.consume(queues.results, (msg: any) => {
         if (msg === null) {
             return logger.log('Null message');
         }
@@ -107,7 +117,7 @@ async function Init(): Promise<void> {
         }
 
         if (!finished) {
-            channel.sendToQueue(Queues.tasks, toBufferJson(taskData), {
+            channel.sendToQueue(queues.tasks, toBufferJson(taskData), {
                 persistent: true
             });
         }
